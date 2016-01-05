@@ -9,8 +9,15 @@
 import SpriteKit
 import AVFoundation
 
+var player:AVAudioPlayer = AVAudioPlayer()
+var playerDead:AVAudioPlayer = AVAudioPlayer()
+
+
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
+    
+    var audioPath = NSBundle.mainBundle().pathForResource("Evolve", ofType: "wav")!
+    var playing = false
     
     var score = 0
     var scoreLabel = SKLabelNode()
@@ -57,6 +64,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     override func didMoveToView(view: SKView) {
+            do {
+                let audioPath2 = NSBundle.mainBundle().pathForResource("mdai", ofType: "mp3")!
+                try playerDead = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: audioPath2))
+                playerDead.currentTime = 0.6
+                //playerDead.play()
+                playing = false
+                gameover = true
+            } catch {
+                print("error")
+            }
+        
+        
+        //BGM再生
+        if playing == false{
+            do {
+                
+                try player = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: audioPath))
+                player.currentTime = 1.5
+                player.play()
+                player.numberOfLoops = -1
+                playing = true
+            } catch {
+                print("error")
+            }
+        }
         
         self.physicsWorld.contactDelegate = self
         
@@ -75,15 +107,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.addChild(scoreLabel)
         
-        let birdTexture = SKTexture(imageNamed: "flappy1.png")
-        let birdTexture2 = SKTexture(imageNamed: "flappy2.png")
+        let birdTexture = SKTexture(imageNamed: "ojo1.png")
+        let birdTexture2 = SKTexture(imageNamed: "ojo2.png")
         
         let animation = SKAction.animateWithTextures([birdTexture, birdTexture2], timePerFrame: 0.1)
         let makeBirdFlap = SKAction.repeatActionForever(animation)
         
         bird = SKSpriteNode(texture: birdTexture)
         
-        bird.position = CGPoint(x: CGRectGetMidX(self.frame), y: CGRectGetMidY(self.frame))
+        bird.position = CGPoint(x: CGRectGetMidX(self.frame), y: CGRectGetMidY(self.frame) + 100)
         
         bird.runAction(makeBirdFlap)
 
@@ -125,7 +157,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     func makePipes(){
-        let gapHeight = bird.size.height * 4
+        let gapHeight = bird.size.height * 3
         
         
         let movementAmount = CGFloat(arc4random() % UInt32(self.frame.size.height / 2)) - self.frame.size.height/4
@@ -198,19 +230,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if gameover == false {
             
-                gameover = true
+ 
                 self.speed = 0
                 
                 gameoverLabel.fontName = "Helvetica"
                 gameoverLabel.fontSize = 30
                 
                 gameoverLabel.text = "Game Over!!! "
-                gameoverLabel.color = UIColor.redColor()
+                gameoverLabel.fontColor = UIColor.redColor()
                 
                 gameoverLabel.zPosition = 5
                 gameoverLabel.position = CGPointMake(CGRectGetMidX(self.frame) , CGRectGetMidY(self.frame))
                 
                 labelContainer.addChild(gameoverLabel)
+                if playing == true{
+                    do {
+                        player.pause()
+                        audioPath = NSBundle.mainBundle().pathForResource("mdai", ofType: "mp3")!
+                        try playerDead = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: audioPath))
+                        player.currentTime = 0.6
+                        playerDead.play()
+                        playing = false
+                        gameover = true
+                    } catch {
+                        print("error")
+                    }
+                }
+                
+                
+                
             }
         }
     }
@@ -218,24 +266,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
        //画面をタッチした時の処理
-        if gameover == false{
-            bird.physicsBody!.velocity = CGVectorMake(0,0)
-            bird.physicsBody!.applyImpulse(CGVectorMake(0, 50))
-        } else {
-            score = 0
-            scoreLabel.text = "0"
-            scoreLabel.zPosition = 5
-            bird.physicsBody!.velocity = CGVectorMake(0, 0)
+        
+        if playerDead.playing == false{
+            if playing == false{
+                do {
+                    audioPath = NSBundle.mainBundle().pathForResource("Evolve", ofType: "wav")!
+                    try player = AVAudioPlayer(contentsOfURL: NSURL(fileURLWithPath: audioPath))
+                    player.currentTime = 1.5
+                    player.play()
+                    player.numberOfLoops = -1
+                    playing = true
+                } catch {
+                    print("error")
+                }
+            }
+
             
-            movingObjects.removeAllChildren()
-            
-            makeBackGround()
-            
-            self.speed = 1
-            
-            gameover = false
-            
-            labelContainer.removeAllChildren()
+            if gameover == false{
+                bird.physicsBody!.velocity = CGVectorMake(0,0)
+                bird.physicsBody!.applyImpulse(CGVectorMake(0, 50))
+            } else {
+                score = 0
+                scoreLabel.text = "0"
+                scoreLabel.zPosition = 5
+                bird.physicsBody!.velocity = CGVectorMake(0, 0)
+                bird.position = CGPoint(x: CGRectGetMidX(self.frame), y: CGRectGetMidY(self.frame))
+                
+                movingObjects.removeAllChildren()
+                
+                makeBackGround()
+                
+                self.speed = 1
+                
+                gameover = false
+                
+                labelContainer.removeAllChildren()
+            }
         }
     }
     
